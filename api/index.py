@@ -3,7 +3,8 @@ import requests
 
 app = Flask(__name__)
 
-API_URL = "https://api-inference.huggingface.co/models/sshleifer/distilbart-cnn-12-6"
+# Updated Hugging Face Inference API Router URL
+API_URL = "https://router.huggingface.co/hf-inference/models/sshleifer/distilbart-cnn-12-6"
 
 @app.route('/api/summarize', methods=['POST'])
 def summarize():
@@ -30,9 +31,10 @@ def summarize():
     }
 
     try:
-        response = requests.post(API_URL, json=payload)
+        response = requests.post(API_URL, json=payload, timeout=30)
         res_data = response.json()
         
+        # Handle initial API model warming delay
         if isinstance(res_data, dict) and 'error' in res_data:
             return jsonify({'error': f"Model loading, please try again in a few seconds: {res_data['error']}"}), 503
 
