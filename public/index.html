@@ -1,89 +1,289 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart Study Notes Generator</title>
-  <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
-    .container { max-width: 750px; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin: 20px auto; }
-    h1 { color: #2c3e50; font-size: 24px; text-align: center; }
-    textarea { width: 100%; height: 160px; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
-    button { background-color: #2563eb; color: white; padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; width: 100%; margin-top: 15px; }
-    button:hover { background-color: #1d4ed8; }
-    .results { margin-top: 25px; display: none; }
-    .summary-box { background-color: #eff6ff; border-left: 4px solid #2563eb; padding: 15px; border-radius: 6px; font-size: 15px; color: #1e293b; }
-    .metrics-grid { display: flex; justify-content: space-between; margin-top: 20px; }
-    .metric-card { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; text-align: center; flex: 1; margin: 0 5px; }
-    .metric-card h3 { margin: 0; font-size: 22px; color: #2563eb; }
-    .metric-card p { margin: 5px 0 0; font-size: 12px; color: #64748b; }
-    .error { color: #dc2626; margin-top: 10px; display: none; font-weight: bold; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Study Notes Generator</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at center, #1b2735 0%, #090a0f 100%),
+                        url('https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?q=80&w=1920&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            padding: 20px;
+            color: #ffffff;
+        }
+
+        .container {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            padding: 30px;
+            width: 100%;
+            max-width: 700px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #a78bfa, #38bdf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 0.95rem;
+            margin-bottom: 24px;
+        }
+
+        .upload-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+            color: #cbd5e1;
+        }
+
+        .file-upload-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px dashed #64748b;
+            padding: 6px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.85rem;
+        }
+
+        .file-upload-btn:hover {
+            background: rgba(167, 139, 250, 0.2);
+            border-color: #a78bfa;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        textarea {
+            width: 100%;
+            height: 180px;
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 14px;
+            color: #f8fafc;
+            font-size: 0.95rem;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        textarea:focus {
+            border-color: #a78bfa;
+            box-shadow: 0 0 10px rgba(167, 139, 250, 0.3);
+        }
+
+        button.btn-submit {
+            width: 100%;
+            margin-top: 16px;
+            padding: 14px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border: none;
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        button.btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        button.btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results {
+            margin-top: 24px;
+            display: none;
+            background: rgba(30, 41, 59, 0.7);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #334155;
+        }
+
+        .metrics {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #334155;
+            text-align: center;
+        }
+
+        .metric-card span {
+            display: block;
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+
+        .metric-card strong {
+            font-size: 1.2rem;
+            color: #38bdf8;
+        }
+
+        .summary-box h3 {
+            font-size: 1.05rem;
+            color: #a78bfa;
+            margin-bottom: 8px;
+        }
+
+        .summary-box p {
+            line-height: 1.6;
+            color: #e2e8f0;
+            font-size: 0.95rem;
+        }
+
+        .error-msg {
+            margin-top: 16px;
+            color: #f87171;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 12px;
+            border-radius: 8px;
+            display: none;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <h1>📝 Smart Study Notes Generator</h1>
-    <p style="text-align:center; color:#64748b;">Convert long academic paragraphs into quick summaries.</p>
-    
-    <textarea id="inputText" placeholder="Paste your study paragraph here..."></textarea>
-    <button id="btn" onclick="generateNotes()">Generate Summary & Metrics</button>
-    <div id="errorBox" class="error"></div>
 
-    <div id="results" class="results">
-      <h3>📌 Generated Summary</h3>
-      <div id="summaryText" class="summary-box"></div>
+<div class="container">
+    <h1>🚀 Smart Study Notes Generator</h1>
+    <p class="subtitle">Transform long academic text into concise summaries with metrics.</p>
 
-      <div class="metrics-grid">
-        <div class="metric-card"><h3 id="origCount">0</h3><p>Original Words</p></div>
-        <div class="metric-card"><h3 id="sumCount">0</h3><p>Summary Words</p></div>
-        <div class="metric-card"><h3 id="reduction">0%</h3><p>Text Reduction</p></div>
-      </div>
+    <div class="upload-section">
+        <span>Paste text below or upload a file:</span>
+        <label class="file-upload-btn">
+            📁 Choose File (.txt)
+            <input type="file" id="fileInput" accept=".txt">
+        </label>
     </div>
-  </div>
 
-  <script>
-    async function generateNotes() {
-      const text = document.getElementById('inputText').value;
-      const btn = document.getElementById('btn');
-      const errorBox = document.getElementById('errorBox');
-      const results = document.getElementById('results');
+    <textarea id="textInput" placeholder="Paste your paragraph here (minimum 20 words)..."></textarea>
 
-      errorBox.style.display = 'none';
-      results.style.display = 'none';
+    <button class="btn-submit" id="submitBtn" onclick="generateSummary()">Generate Summary & Metrics</button>
 
-      if(!text.trim()) {
-        errorBox.innerText = 'Please paste some text first.';
-        errorBox.style.display = 'block';
-        return;
-      }
+    <div class="error-msg" id="errorBox"></div>
 
-      btn.innerText = 'Analyzing & Summarizing...';
-      btn.disabled = true;
+    <div class="results" id="resultBox">
+        <div class="metrics">
+            <div class="metric-card">
+                <span>Original Words</span>
+                <strong id="origCount">0</strong>
+            </div>
+            <div class="metric-card">
+                <span>Summary Words</span>
+                <strong id="summaryCount">0</strong>
+            </div>
+            <div class="metric-card">
+                <span>Reduction</span>
+                <strong id="reductionPct">0%</strong>
+            </div>
+        </div>
+        <div class="summary-box">
+            <h3>Summary Note:</h3>
+            <p id="summaryText"></p>
+        </div>
+    </div>
+</div>
 
-      try {
-        const response = await fetch('/api/summarize', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: text })
-        });
+<script>
+    // Handle File Upload
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
 
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Server error');
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('textInput').value = e.target.result;
+        };
+        reader.readAsText(file);
+    });
 
-        document.getElementById('summaryText').innerText = data.summary;
-        document.getElementById('origCount').innerText = data.orig_count;
-        document.getElementById('sumCount').innerText = data.summary_count;
-        document.getElementById('reduction').innerText = data.reduction_pct + '%';
+    // Handle Summary Request
+    async function generateSummary() {
+        const text = document.getElementById('textInput').value.trim();
+        const submitBtn = document.getElementById('submitBtn');
+        const errorBox = document.getElementById('errorBox');
+        const resultBox = document.getElementById('resultBox');
 
-        results.style.display = 'block';
-      } catch (err) {
-        errorBox.innerText = err.message;
-        errorBox.style.display = 'block';
-      } finally {
-        btn.innerText = 'Generate Summary & Metrics';
-        btn.disabled = false;
-      }
+        errorBox.style.display = 'none';
+        resultBox.style.display = 'none';
+
+        if (!text) {
+            showError('Please enter text or upload a file first.');
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.innerText = 'Processing with AI...';
+
+        try {
+            const response = await fetch('/api/summarize', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: text })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                showError(data.error || 'Failed to generate summary.');
+            } else {
+                document.getElementById('origCount').innerText = data.orig_count;
+                document.getElementById('summaryCount').innerText = data.summary_count;
+                document.getElementById('reductionPct').innerText = data.reduction_pct + '%';
+                document.getElementById('summaryText').innerText = data.summary;
+                resultBox.style.display = 'block';
+            }
+        } catch (err) {
+            showError('Network error. Please try again later.');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerText = 'Generate Summary & Metrics';
+        }
     }
-  </script>
+
+    function showError(msg) {
+        const errorBox = document.getElementById('errorBox');
+        errorBox.innerText = msg;
+        errorBox.style.display = 'block';
+    }
+</script>
+
 </body>
 </html>
