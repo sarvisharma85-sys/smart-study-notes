@@ -3,7 +3,6 @@ import requests
 
 app = Flask(__name__)
 
-
 API_URL = "https://api-inference.huggingface.co/models/sshleifer/distilbart-cnn-12-6"
 
 @app.route('/api/summarize', methods=['POST'])
