@@ -1,14 +1,39 @@
 from flask import Flask, request, jsonify
 import requests
+import re
 
 app = Flask(__name__)
 
-# Primary and fallback endpoints
-ENDPOINTS = [
-    "https://api-inference.huggingface.co/models/facebook/bart-large-cnn",
-    "https://router.huggingface.co/hf-inference/models/facebook/bart-large-cnn",
-    "https://api-inference.huggingface.co/models/sshleifer/distilbart-cnn-12-6"
-]
+# Updated Hugging Face router URL
+HF_API_URL = "https://router.huggingface.co/hf-inference/models/facebook/bart-large-cnn"
+
+def fallback_summarize(text):
+    """Smart local summarizer fallback if Hugging Face is down/loading."""
+    sentences = re.split(r'(?<=[.!?]) +', text)
+    if len(sentences) <= 2:
+        return text
+    
+    # Calculate word frequency
+    words = re.findall(r'\w+', text.lower())
+    stop_words = {'the', 'a', 'an', 'and', 'or', 'but', 'is', 'are', 'was', 'were', 'in', 'on', 'at', 'by', 'for', 'with', 'about', 'against', 'between', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'to', 'from', 'up', 'down', 'of', 'off', 'over', 'under', 'again', 'further', 'then', 'once', 'this', 'that', 'these', 'those', 'it', 'its'}
+    freq = {}
+    for word in words:
+        if word not in stop_words:
+            freq[word] = freq.get(word, 0) + 1
+
+    # Score sentences
+    scored_sentences = []
+    for sentence in sentences:
+        score = sum(freq.get(w.lower(), 0) for w in re.findall(r'\w+', sentence))
+        scored_sentences.append((score, sentence))
+
+    scored_sentences.sort(key=lambda x: x[0], reverse=True)
+    num_sentences = max(1, len(sentences) // 2)
+    selected = [s[1] for s in scored_sentences[:num_sentences]]
+    
+    # Preserve original sentence order
+    selected_in_order = [s for s in sentences if s in selected]
+    return " ".join(selected_in_order)
 
 @app.route('/api/summarize', methods=['POST'])
 def summarize():
@@ -27,52 +52,35 @@ def summarize():
 
     payload = {
         "inputs": text,
-        "parameters": {
-            "max_length": max_len,
-            "min_length": min_len,
-            "do_sample": False
-        },
-        "options": {
-            "wait_for_model": True
-        }
+        "parameters": {"max_length": max_len, "min_length": min_len, "do_sample": False},
+        "options": {"wait_for_model": True}
     }
 
-    last_error = ""
-    for url in ENDPOINTS:
-        try:
-            response = requests.post(
-                url, 
-                json=payload, 
-                headers={"User-Agent": "Mozilla/5.0"}, 
-                timeout=15
-            )
-            
-            # Check if response is valid JSON
-            try:
-                res_data = response.json()
-            except Exception:
-                continue
+    summary_text = None
 
-            if isinstance(res_data, dict) and 'error' in res_data:
-                last_error = res_data['error']
-                continue
-
+    # Try Hugging Face Inference API
+    try:
+        response = requests.post(HF_API_URL, json=payload, headers={"User-Agent": "Mozilla/5.0"}, timeout=8)
+        if response.status_code == 200:
+            res_data = response.json()
             if isinstance(res_data, list) and len(res_data) > 0 and 'summary_text' in res_data[0]:
                 summary_text = res_data[0]['summary_text']
-                summary_words = len(summary_text.split())
-                reduction_pct = round(((orig_words - summary_words) / orig_words) * 100, 2)
+    except Exception:
+        pass
 
-                return jsonify({
-                    'summary': summary_text,
-                    'orig_count': orig_words,
-                    'summary_count': summary_words,
-                    'reduction_pct': reduction_pct
-                })
-        except Exception as e:
-            last_error = str(e)
-            continue
+    # Fallback locally if API call failed or timed out
+    if not summary_text:
+        summary_text = fallback_summarize(text)
 
-    return jsonify({'error': f"AI model busy or loading. Please try again in 5 seconds. Details: {last_error}"}), 503
+    summary_words = len(summary_text.split())
+    reduction_pct = round(((orig_words - summary_words) / orig_words) * 100, 2)
+
+    return jsonify({
+        'summary': summary_text,
+        'orig_count': orig_words,
+        'summary_count': summary_words,
+        'reduction_pct': reduction_pct
+    })
 
 if __name__ == '__main__':
     app.run()
