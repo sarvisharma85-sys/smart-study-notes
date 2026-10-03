@@ -222,14 +222,13 @@
         </label>
     </div>
 
-    <textarea id="textInput" placeholder="Paste text here. TIP: Paste 3 distinct paragraphs separated by line breaks to generate individual observations..."></textarea>
+    <textarea id="textInput" placeholder="Paste your paragraphs here (separated by line breaks)..."></textarea>
 
     <button class="btn-submit" id="submitBtn" onclick="generateSummary()">Generate Summary & Paragraph Observations</button>
 
     <div class="error-msg" id="errorBox"></div>
 
     <div class="results" id="resultBox">
-        <!-- Global Metrics -->
         <div class="metrics">
             <div class="metric-card">
                 <span>Total Words</span>
@@ -249,14 +248,12 @@
             </div>
         </div>
 
-        <!-- Comprehensive Note -->
         <h3 class="section-title">📌 Full Consolidated Note:</h3>
         <div class="summary-box">
             <p id="summaryText"></p>
         </div>
 
-        <!-- Separate Paragraph Observations -->
-        <h3 class="section-title">📊 Separate Paragraph Observations:</h3>
+        <h3 class="section-title">📊 Separate Observations:</h3>
         <table class="obs-table">
             <thead>
                 <tr>
@@ -321,7 +318,6 @@
                 document.getElementById('paraCount').innerText = data.paragraph_observations ? data.paragraph_observations.length : 1;
                 document.getElementById('summaryText').innerText = data.summary;
 
-                // Populate Observations Table
                 obsTableBody.innerHTML = '';
                 if (data.paragraph_observations && data.paragraph_observations.length > 0) {
                     data.paragraph_observations.forEach((obs, index) => {
