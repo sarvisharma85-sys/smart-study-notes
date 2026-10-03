@@ -49,7 +49,6 @@ def summarize():
         if orig_words < 20:
             return jsonify({'error': 'Text is too short. Please enter at least 20 words.'}), 400
 
-        # Split into individual paragraphs (separated by blank lines or line breaks)
         paragraphs = [p.strip() for p in re.split(r'\n\s*\n|\n', text) if p.strip()]
         
         paragraph_observations = []
