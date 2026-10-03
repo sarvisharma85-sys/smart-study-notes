@@ -5,7 +5,9 @@ app = Flask(__name__)
 
 def generate_extractive_summary(text):
     sentences = re.split(r'(?<=[.!?]) +', text.strip())
-    if len(sentences) <= 2:
+    sentences = [s.strip() for s in sentences if s.strip()]
+    
+    if len(sentences) <= 1:
         return text
 
     words = re.findall(r'\w+', text.lower())
@@ -47,15 +49,39 @@ def summarize():
         if orig_words < 20:
             return jsonify({'error': 'Text is too short. Please enter at least 20 words.'}), 400
 
-        summary_text = generate_extractive_summary(text)
-        summary_words = len(summary_text.split())
-        reduction_pct = round(((orig_words - summary_words) / orig_words) * 100, 2)
+        # Split into individual paragraphs (separated by blank lines or line breaks)
+        paragraphs = [p.strip() for p in re.split(r'\n\s*\n|\n', text) if p.strip()]
+        
+        paragraph_observations = []
+        full_summary_list = []
+
+        for p in paragraphs:
+            p_words = len(p.split())
+            if p_words == 0:
+                continue
+            
+            p_summary = generate_extractive_summary(p)
+            p_sum_words = len(p_summary.split())
+            p_reduction = round(((p_words - p_sum_words) / p_words) * 100, 2) if p_words > 0 else 0
+
+            paragraph_observations.append({
+                'orig_words': p_words,
+                'summary_words': p_sum_words,
+                'reduction_pct': p_reduction,
+                'summary': p_summary
+            })
+            full_summary_list.append(p_summary)
+
+        full_summary = " ".join(full_summary_list)
+        total_summary_words = len(full_summary.split())
+        total_reduction = round(((orig_words - total_summary_words) / orig_words) * 100, 2)
 
         return jsonify({
-            'summary': summary_text,
+            'summary': full_summary,
             'orig_count': orig_words,
-            'summary_count': summary_words,
-            'reduction_pct': reduction_pct
+            'summary_count': total_summary_words,
+            'reduction_pct': total_reduction,
+            'paragraph_observations': paragraph_observations
         })
     except Exception as e:
         return jsonify({'error': f"Processing error: {str(e)}"}), 500
