@@ -27,13 +27,13 @@
         }
 
         .container {
-            background: rgba(15, 23, 42, 0.85);
+            background: rgba(15, 23, 42, 0.88);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 16px;
             padding: 30px;
             width: 100%;
-            max-width: 700px;
+            max-width: 850px;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
         }
 
@@ -50,7 +50,7 @@
             text-align: center;
             color: #94a3b8;
             font-size: 0.95rem;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
 
         .upload-section {
@@ -137,7 +137,7 @@
         .metrics {
             display: flex;
             justify-content: space-around;
-            margin-bottom: 16px;
+            margin-bottom: 20px;
             padding-bottom: 12px;
             border-bottom: 1px solid #334155;
             text-align: center;
@@ -154,16 +154,45 @@
             color: #38bdf8;
         }
 
-        .summary-box h3 {
-            font-size: 1.05rem;
+        .section-title {
+            font-size: 1.1rem;
             color: #a78bfa;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
+            margin-top: 16px;
+        }
+
+        .obs-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 0.88rem;
+        }
+
+        .obs-table th, .obs-table td {
+            border: 1px solid #334155;
+            padding: 10px;
+            text-align: left;
+        }
+
+        .obs-table th {
+            background: rgba(99, 102, 241, 0.2);
+            color: #38bdf8;
+        }
+
+        .obs-table td {
+            background: rgba(15, 23, 42, 0.5);
+            color: #e2e8f0;
         }
 
         .summary-box p {
             line-height: 1.6;
             color: #e2e8f0;
             font-size: 0.95rem;
+            background: rgba(15, 23, 42, 0.5);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            margin-bottom: 12px;
         }
 
         .error-msg {
@@ -183,26 +212,27 @@
 
 <div class="container">
     <h1>🚀 Smart Study Notes Generator</h1>
-    <p class="subtitle">Transform long academic text into concise summaries with metrics.</p>
+    <p class="subtitle">Multi-Paragraph Analysis & Extractive Summarization Engine</p>
 
     <div class="upload-section">
-        <span>Paste text below or upload a file:</span>
+        <span>Paste text below (or input 3 paragraphs for separate observation testing):</span>
         <label class="file-upload-btn">
             📁 Choose File (.txt)
             <input type="file" id="fileInput" accept=".txt">
         </label>
     </div>
 
-    <textarea id="textInput" placeholder="Paste your paragraph here (minimum 20 words)..."></textarea>
+    <textarea id="textInput" placeholder="Paste text here. TIP: Paste 3 distinct paragraphs separated by line breaks to generate individual observations..."></textarea>
 
-    <button class="btn-submit" id="submitBtn" onclick="generateSummary()">Generate Summary & Metrics</button>
+    <button class="btn-submit" id="submitBtn" onclick="generateSummary()">Generate Summary & Paragraph Observations</button>
 
     <div class="error-msg" id="errorBox"></div>
 
     <div class="results" id="resultBox">
+        <!-- Global Metrics -->
         <div class="metrics">
             <div class="metric-card">
-                <span>Original Words</span>
+                <span>Total Words</span>
                 <strong id="origCount">0</strong>
             </div>
             <div class="metric-card">
@@ -210,19 +240,40 @@
                 <strong id="summaryCount">0</strong>
             </div>
             <div class="metric-card">
-                <span>Reduction</span>
+                <span>Total Reduction</span>
                 <strong id="reductionPct">0%</strong>
             </div>
+            <div class="metric-card">
+                <span>Paragraph Count</span>
+                <strong id="paraCount">0</strong>
+            </div>
         </div>
+
+        <!-- Comprehensive Note -->
+        <h3 class="section-title">📌 Full Consolidated Note:</h3>
         <div class="summary-box">
-            <h3>Summary Note:</h3>
             <p id="summaryText"></p>
         </div>
+
+        <!-- Separate Paragraph Observations -->
+        <h3 class="section-title">📊 Separate Paragraph Observations:</h3>
+        <table class="obs-table">
+            <thead>
+                <tr>
+                    <th>Paragraph #</th>
+                    <th>Orig Words</th>
+                    <th>Summary Words</th>
+                    <th>Reduction</th>
+                    <th>Extracted Summary / Key Observation</th>
+                </tr>
+            </thead>
+            <tbody id="obsTableBody">
+            </tbody>
+        </table>
     </div>
 </div>
 
 <script>
-    // Handle File Upload
     document.getElementById('fileInput').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -234,12 +285,12 @@
         reader.readAsText(file);
     });
 
-    // Handle Summary Request
     async function generateSummary() {
         const text = document.getElementById('textInput').value.trim();
         const submitBtn = document.getElementById('submitBtn');
         const errorBox = document.getElementById('errorBox');
         const resultBox = document.getElementById('resultBox');
+        const obsTableBody = document.getElementById('obsTableBody');
 
         errorBox.style.display = 'none';
         resultBox.style.display = 'none';
@@ -250,7 +301,7 @@
         }
 
         submitBtn.disabled = true;
-        submitBtn.innerText = 'Processing with AI...';
+        submitBtn.innerText = 'Analyzing Paragraphs & Generating Observations...';
 
         try {
             const response = await fetch('/api/summarize', {
@@ -267,14 +318,32 @@
                 document.getElementById('origCount').innerText = data.orig_count;
                 document.getElementById('summaryCount').innerText = data.summary_count;
                 document.getElementById('reductionPct').innerText = data.reduction_pct + '%';
+                document.getElementById('paraCount').innerText = data.paragraph_observations ? data.paragraph_observations.length : 1;
                 document.getElementById('summaryText').innerText = data.summary;
+
+                // Populate Observations Table
+                obsTableBody.innerHTML = '';
+                if (data.paragraph_observations && data.paragraph_observations.length > 0) {
+                    data.paragraph_observations.forEach((obs, index) => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td><strong>Paragraph ${index + 1}</strong></td>
+                            <td>${obs.orig_words}</td>
+                            <td>${obs.summary_words}</td>
+                            <td><span style="color:#38bdf8; font-weight:bold;">${obs.reduction_pct}%</span></td>
+                            <td>${obs.summary}</td>
+                        `;
+                        obsTableBody.appendChild(row);
+                    });
+                }
+
                 resultBox.style.display = 'block';
             }
         } catch (err) {
             showError('Network error. Please try again later.');
         } finally {
             submitBtn.disabled = false;
-            submitBtn.innerText = 'Generate Summary & Metrics';
+            submitBtn.innerText = 'Generate Summary & Paragraph Observations';
         }
     }
 
